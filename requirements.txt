@@ -1,0 +1,9 @@
+conda==4.2.12
+menuinst==1.4.2
+pycosat==0.6.1
+pycrypto==2.6.1
+PyQt5==5.8.2
+pywin32==220
+requests==2.11.1
+ruamel-yaml===-VERSION
+sip==4.19.2
