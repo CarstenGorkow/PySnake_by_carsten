@@ -28,6 +28,7 @@ class MyFirstGuiProgram(design.Ui_MainWindow):
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     #dialog = QtWidgets.QDialog()
+    # to use a central widget
     dialog = QtWidgets.QMainWindow()
 
     prog = MyFirstGuiProgram(dialog)
