@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{b41514b7-f532-41e1-b773-7e4b9a7e994a}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>StartPySnake.py</StartupFile>
+    <SearchPath />
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId />
+    <InterpreterVersion />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+    <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Game\Game.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Game\GameOnClient.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Game\GameOnServer.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Game\Player.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Game\SnakeGame.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Game\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="GrafikObjects\CanvasObject.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="GrafikObjects\SnakeFood.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="GrafikObjects\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MyGui\TableModel.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MyGui\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Network\Client.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Network\DataElementTree.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Network\ClientOnServerWraper.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Network\GameClient.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Network\GameServer.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Network\Server.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="GrafikObjects\SnakeUser.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Network\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="PyQt_Gui\Widget_Ui_start_game.py" />
+    <Compile Include="PyQt_Gui\Widget_start_game.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="PyQt_Gui\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="PyQt_Gui\Snake_main_window.py" />
+    <Compile Include="StartPySnake.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="requirements.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Game\" />
+    <Folder Include="GrafikObjects\" />
+    <Folder Include="MyGui\" />
+    <Folder Include="Network\" />
+    <Folder Include="PyQt_Gui\" />
+  </ItemGroup>
+  <Import Project="$(PtvsTargetsFile)" Condition="Exists($(PtvsTargetsFile))" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="!Exists($(PtvsTargetsFile))" />
+</Project>
