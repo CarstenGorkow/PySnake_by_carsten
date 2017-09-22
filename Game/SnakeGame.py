@@ -16,8 +16,15 @@ class SnakeGame(Game.Game):
         self.step = 0
         self.timer = QtCore.QTimer()
 
+        self.food_list = []
+        self.border_list = []
+
 
     def set_field_size(self,w,h):
         self.field_size.setX(w)
         self.field_size.setY(h)
 
+
+    def stop_game(self):
+        self.timer.stop()
+        return super().stop_game()

@@ -11,17 +11,21 @@ from Network.ClientOnServerWraper import ClientOnServerWraper
 class Client( QtCore.QObject):
     """Base client class that manages the receving and sending of data"""
 
+    signalCommand = QtCore.pyqtSignal(list)
+
     def __init__(self):
         QtCore.QObject.__init__(self)
 
         self.listen_for_server_msg = True
         self.execute_queue = True
 
-        self.timer_client_interval = 0.1 # s
+        self.timer_client_interval = 0.03 # s
         #self.timer_queue_execution = 1.0 # s
 
         self.task_queue = queue.Queue()
         
+        self.client_wrap = None
+        self.port = 12349                # Reserve a port for your service.
         self.create_client()
 
 
@@ -30,23 +34,36 @@ class Client( QtCore.QObject):
         - set host and port for connection"""
         self.client = socket.socket()         # Create a socket object
         self.host = socket.gethostname() # Get local machine name
-        self.port = 12349                # Reserve a port for your service.
         
 
     def connect_client(self):
         """connect the client to the given server """
-        #try:
-        if True:
+        try:
             self.client.connect((self.host, self.port))
-            self.client_wrap = ClientOnServerWraper(self.client,[])
+            self.client_wrap = ClientOnServerWraper(self.client,[],"c")
             self.start_listener_to_server()
+            print(" -> connected to server")
             #self.start_queue_execution()
-        #except:
-        #    print("Connecting to server was not possible")
+        except:
+            print(" -> connection failed - return ")
 
 
     def close_client(self):
         self.client.close()
+
+
+    def is_connected(self):
+        """ returns True is the client is connected to an endpoint, otherweise False"""
+        is_connected = False
+        if self.client != None:
+            try:
+                peername = self.client.getpeername()
+                is_connected = True
+            except:
+                pass
+
+        return is_connected
+
     
 
     def start_listener_to_server(self):
@@ -67,11 +84,15 @@ class Client( QtCore.QObject):
                 self.client_wrap.task_queue.task_done()
             time.sleep(self.timer_client_interval)
 
+
     def put_task_to_queue(self,task):
-        """ orgenises the execution and reirection of tasks in the background process 
+        """ orgenises the execution and redirection of tasks in the background process 
         -> can be overwritten by derived class for redirection"""        
-        self.task_queue.put(task)
+        #self.task_queue.put(task)
+        self.signalCommand.emit(task)
+
             
+
     #def start_queue_execution(self):
     #    """ starts the server listen in background loop 
     #    - can be stoped with self.listen_for_client_connect=False"""

@@ -56,12 +56,15 @@ class DataElementTree(object):
                         out.append(self._eval_dict_item(child))
         elif parent.attrib["type"] == "int":
                     out = int(parent.text)
+        elif parent.attrib["type"] == "float":
+                    out = float(parent.text)
         elif parent.attrib["type"] == "str":
                     out = parent.text
         else:
-                    print("type unknown : " + parent.attrib["type"])
+                    print("type unknown : " + parent.attrib["type"], parent.text)
                     out = "error"
         return out
                      
+
     def _convert_str_to_obj(self,str,attrib):
         pass

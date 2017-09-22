@@ -1,6 +1,9 @@
 from PyQt5 import QtCore
 import queue
 
+import GrafikObjects
+
+
 class Game(QtCore.QObject):
     """description of class"""
 
@@ -18,14 +21,24 @@ class Game(QtCore.QObject):
             self.player_list.append(player)
             self.player_nr = len(self.player_list)
             return True
+        #print([p.name for p in self.player_list])
         return False
+
+
+    def consolidate_player(self,data_dict):
+        """ consolidating the player data that cames from the server / removing player and adding new """
+        self.remove_player_not_in_list( [p['id'] for p in data_dict])
+        for pl_data in data_dict:
+            pl_id = pl_data['id']
+            if not self.is_player_joined(pl_id):
+                self.join_game(GrafikObjects.Player(None,pl_data))
 
 
     def remove_player_not_in_list(self,player_list):
         """ removes all player that are not in the list """
         remove_list = []
         for pl in self.player_list:
-            if pl.name not in player_list:
+            if pl.id not in player_list:
                 remove_list.append(pl)
         for pl in remove_list:
             self.player_list.remove(pl)
@@ -34,7 +47,7 @@ class Game(QtCore.QObject):
     def is_player_joined(self,player_name):
         """ checkes if a player with a specific name has joined the game """
         for pl in self.player_list:
-            if pl.name == player_name: return True
+            if pl.id == player_name: return True
         return False
     
 

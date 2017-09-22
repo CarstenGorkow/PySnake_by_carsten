@@ -30,16 +30,19 @@
     <Compile Include="Game\GameOnServer.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Game\Player.py">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="Game\SnakeGame.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Game\__init__.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="GrafikObjects\Border.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="GrafikObjects\CanvasObject.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="GrafikObjects\Line.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="GrafikObjects\SnakeFood.py">
@@ -72,12 +75,16 @@
     <Compile Include="Network\Server.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="GrafikObjects\SnakeUser.py">
+    <Compile Include="GrafikObjects\Player.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Network\__init__.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="PyQt_Gui\Widget_game_over.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="PyQt_Gui\Widget_Ui_game_over.py" />
     <Compile Include="PyQt_Gui\Widget_Ui_start_game.py" />
     <Compile Include="PyQt_Gui\Widget_start_game.py">
       <SubType>Code</SubType>

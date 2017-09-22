@@ -2,9 +2,12 @@ from PyQt5 import Qt,QtCore
 
 import Network
 import Game
+import GrafikObjects
 
 
 class GameThread(QtCore.QThread):
+
+    signalCommand = QtCore.pyqtSignal(list)
 
     def __init__(self,game):
         QtCore.QThread.__init__(self)
@@ -23,13 +26,11 @@ class GameThread(QtCore.QThread):
         self.game.timer = self.timer
         self.exec()
         print("work thread finished")
-        #return super().run()
 
 
 class GameServer(Network.Server):
     """description of class"""
 
-    signalCommand = QtCore.pyqtSignal(dict)
 
     def __init__(self):
         Network.Server.__init__(self)
@@ -39,6 +40,7 @@ class GameServer(Network.Server):
         self.open_game_list = []
         self.client_game_dict = {}
         self.game_name_dict = {}
+        self.player_max_id = 0
        
 
     def command_eval(self,client,data_element_tree):
@@ -56,20 +58,24 @@ class GameServer(Network.Server):
             elif command_key == "join_game":
                 self.join_game(self.client_player_dict[client],tree_dict[command_key])
                 self.send_all_open_games()
+            elif command_key == "get_open_games":
+                self.send_all_open_games()
             elif command_key == "game":
                 #self.client_game_dict[client].command_eval(tree_dict[command_key])
                 # must be a dict -> otherwise empty
-                print(QtCore.QThread.currentThreadId(),"command eval thread")
-                self.signalCommand.emit(tree_dict[command_key])
+                self.game_thread.signalCommand.emit([client,tree_dict[command_key]])
             else:
                 print("ERROR - Server - Command key not knwon '%s'"%key)
 
 
-    def attach_client(self, c, addr):
+    def _attach_client(self, c, addr):
         """ overwriten methode from server
         creats a list for networkclient to player"""
-        client = super().attach_client(c, addr)
-        self.client_player_dict[client] = Game.Player(client)
+        client = super()._attach_client(c, addr)
+
+        self.client_player_dict[client] = GrafikObjects.Player(client,{"id":"p%i"%self.player_max_id})
+        self.player_max_id = self.player_max_id +1 
+
         return client
 
 
@@ -80,6 +86,8 @@ class GameServer(Network.Server):
             for cl_key in data_dict:
                 if cl_key == "name":
                     player.name = data_dict[cl_key]
+                elif cl_key == "color":
+                    player.color = data_dict[cl_key]
 
 
     def open_game(self,game_host,game_name):
@@ -87,13 +95,10 @@ class GameServer(Network.Server):
         game = Game.GameOnServer(game_host,game_name)
 
         print(QtCore.QThread.currentThreadId(),"server thread")
-        game_thread = GameThread(game)
-        
-        game.moveToThread(game_thread)
-        game_thread.start()
-        #game.timer.moveToThread(game_thread)
-
-        self.signalCommand.connect(game.updateCommand)
+        self.game_thread = GameThread(game)
+        game.moveToThread(self.game_thread)
+        self.game_thread.signalCommand.connect(game.updateCommand)
+        self.game_thread.start()
 
         #self.game.moveToThread(self)
         #self.game.timer.moveToThread(self)
@@ -116,13 +121,12 @@ class GameServer(Network.Server):
         """ sending the open games to all hosts """
         open_games_dict = {}
         for g in self.open_game_list:
-            open_games_dict[g.name] = [g.player_nr,[p.name for p in g.player_list]]
+            open_games_dict[g.name] = [p.get_data_dict() for p in g.player_list]
         self.send_clients({"open_games":open_games_dict})
 
 
     def reset_game(self):
         pass
-
 
 
     def start_game(self):

@@ -4,15 +4,31 @@ from PyQt5.QtCore import QTimer
 
 import PyQt_Gui
 import Game
+import GrafikObjects
+import time
 
 class GameOnClient(Game.SnakeGame):
     """description of class"""
 
+
     @QtCore.pyqtSlot(list)
-    def updateCommand(self, status):
-        #print(QtCore.QThread.currentThreadId(),"signal  thread ")
-        #print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxx",status)
+    def eval_command_from_server(self, status):
         self.command_eval(status[0],status[1])
+        self.t_server_list.append(status[2])
+        self.t_treedict_list.append(status[3])
+
+    @QtCore.pyqtSlot(int)
+    def change_direction(self, key_int):
+        dir = 0
+        if key_int == QtCore.Qt.Key_W:
+            dir = 1
+        elif key_int == QtCore.Qt.Key_A:
+            dir = 2
+        elif key_int == QtCore.Qt.Key_S:
+            dir = 3
+        elif key_int == QtCore.Qt.Key_D:
+            dir = 4
+        self.on_data_to_server({"game":{"change_dir":dir}})
 
 
     def __init__(self,name,graphics_view,is_host,callback_data_to_server):
@@ -22,32 +38,96 @@ class GameOnClient(Game.SnakeGame):
         self.is_host = is_host
         self.callback_data_to_server = callback_data_to_server
 
-        print(QtCore.QThread.currentThreadId(),"client game thread ")
+        self.grafik_object_dict = {}
 
         self.timer.timeout.connect(self.gameLoop)
+        self.timer_interval = 50
 
         # grafik items
-        self.game_start_dialog = None
+        self.game_start_dialog = PyQt_Gui.Widget_Start_game()
+        self.game_over_dialog = PyQt_Gui.Widget_Game_over()
         self.info_label_GUI = None
+
+        self._fps = 0
+        self._fps_temp = 0
+        self._ping = 0
+        self.timer_sec_ellapsed = QtCore.QTimer()  
+        self.timer_sec_ellapsed.timeout.connect(self.on_sec_ellapsed)
+        self.timer_sec_ellapsed.start(1000)
+        self.t_server_list = []
+        self.t_server = 0
+        self.t_treedict_list = []
+        self.t_treedict = 0
 
         self.init_view_size()
 
+    # ======================= server game commands
 
     def command_eval(self,client,tree_dict):
-        #print("game on client - command eval : ",tree_dict)
 
         for command_key in tree_dict:
             if command_key == "set_field_size":
                 self.set_field_size(tree_dict[command_key][0],tree_dict[command_key][1])
                 self.init_view()
+                self._insert_start_game_dialog()
             elif command_key == "player_coor":
                 coor_dict = tree_dict[command_key]
+                #print(coor_dict)
                 self.update_player_coordinates(coor_dict)
             elif command_key == "player_dir":
                 self.update_player_direction(tree_dict[command_key])
+            elif command_key == "grafik_objects":
+                self.update_grafik_objects(tree_dict[command_key])
+            elif command_key == "game_over":
+                self.on_game_over()
+            elif command_key == "reset_ready":
+                self.init_view()
+                self._on_game_is_ready()
+            elif command_key == "hide_all_dialogs":
+                self._hide_all_dialods()
             else:
-                print("ERROR - Server - Command key not knwon '%s'"%key)
+                print("ERROR - Server - Command key not knwon '%s'"%command_key)
 
+    def update_player_coordinates(self,player_coor_dict):
+        """ updating all player coordinates """
+        self._fps_temp = self._fps_temp +1 
+        pl_dict = {}
+        for pl in self.player_list:
+            pl_dict[pl.id] = pl
+        for pl_name in player_coor_dict:
+            if pl_name in pl_dict:
+                pl_dict[pl_name].update_position(player_coor_dict[pl_name])
+
+
+    def update_player_direction(self,player_dir_dict):
+        """ function is executed on game start -> player chaned from hold to go """
+        pl_dict = {}
+        for pl in self.player_list:
+            pl_dict[pl.name] = pl
+
+        #for pl_name in player_dir_dict:
+        #    if pl_name in pl_dict:
+        #        pl_dict[pl_name].direction = player_dir_dict[pl_name]
+
+
+    def update_grafik_objects(self,grafic_object_list):
+        """ updates all objects in the object list with servser data """
+        for obj_dict in grafic_object_list:
+            name = obj_dict["name"]
+            if name in self.grafik_object_dict:
+                obj = self.grafik_object_dict[name]
+                if obj.type == obj_dict["type"]:
+                    pass
+                else:
+                    print("error")
+            else:
+                if obj_dict["type"] == "food":
+                    obj = GrafikObjects.SnakeFood([0,0])
+                    obj.name = obj_dict["name"]
+                self.grafik_object_dict[name] = obj
+
+            obj.set_point_list_fload(obj_dict["points"])
+            obj.set_line_list_fload(obj_dict["lines"])
     # ======================= game preparation
 
     def init_view_size(self):
@@ -55,55 +135,55 @@ class GameOnClient(Game.SnakeGame):
         ---> start timer <--- """
         # calculate field size
         self._calculate_field_size()
+        #time.sleep(1)
         self.on_data_to_server({"game":{"start_game_on_hold":""}})
 
 
     def init_view(self):
         """ inti view, if field size is given """
-        self._set_field_size()
-        self._insert_start_game_dialog()
+        #self._set_field_size()
         self._insert_info_label()
-        self.timer.start(250)
+        self.timer.start(self.timer_interval)
+
 
 
     def _calculate_field_size(self):
         """ calculates the logical field size and sends to server """
         w = round( self.graphics_view.width() /self.line_width)
         h = round( self.graphics_view.height()/self.line_width)
-        #print("initial view size :  %i %i"%(w,h))
         # send field size to server
         self.on_data_to_server({"game":{"set_field_size":[w,h]}})
 
 
-    def _set_field_size(self):
-        """ sets the real size of the field widget """
+    def set_field_size(self,w,h):
+        res = super().set_field_size(w,h)
         self.graphics_view.setFixedWidth (self.field_size.x()*self.line_width)
         self.graphics_view.setFixedHeight(self.field_size.y()*self.line_width)
         self.graphics_view.centerOn(0,0)
         self.graphics_view.setDragMode(QtWidgets.QGraphicsView.NoDrag)
         self.graphics_view.setSceneRect(QtCore.QRectF(0,0,100,100))
         self.graphics_view.update()
-
         self._update_size_dimension()
-        #print("%i %i %i %i %i %i"%(self.x1,self.y1,self.x2,self.y2,self.h,self.w))
+        return res
 
 
     def _insert_start_game_dialog(self):
         """ insert start game dialog """
-        self.game_start_dialog = PyQt_Gui.Widget_Start_game()
         self.game_start_dialog_GUI = self.scene.addWidget(self.game_start_dialog)
         x = self.x1+ self.w/2 - self.game_start_dialog.width()/2
         y = self.y1+ self.h/2 -  self.game_start_dialog.height()/2
         self.game_start_dialog_GUI.setPos(x,y)
         self.game_start_dialog.push_button_start_game.clicked.connect(self.start_game)
+        self.game_start_dialog.show()
         self.update_start_game_dialog()
 
 
     def _insert_info_label(self):
         """ insert label for devlope information """
-        self.info_label_GUI = self.scene.addText("")
-        x = self.x1+self.w*0.90 
-        y = self.y1+self.h*0.95
+        if self.info_label_GUI == None:
+            self.info_label_GUI = self.scene.addText("")
+        x = self.x1+self.w*0.8 
+        y = self.y1+self.h*0.75
         self.info_label_GUI.setPos(x,y)
         self.graphics_view.update()
 
@@ -127,6 +207,7 @@ class GameOnClient(Game.SnakeGame):
 
 
     def join_game(self, player):
+        print(" -> join game client "+self.name+" -> "+player.name)
         join_result = super().join_game(player)
         self.update_start_game_dialog()
         return join_result
@@ -134,66 +215,76 @@ class GameOnClient(Game.SnakeGame):
 
     def start_game(self):
         """ executed if a game run is startet -> game loop already running """
+        self.on_data_to_server({"game":{"go":""}})
+
+    def _hide_all_dialods(self):
+        """ hides all dialogs directly before the game starts"""
         self.game_start_dialog.hide()
+        self.game_over_dialog.hide()
+
+    # ======================= game over dialog
+    def on_game_over(self):
+        self.timer.stop()
+        self.show_game_over_dialog()
+
+
+    def show_game_over_dialog(self):
+        """ called on game over - show dialog """
+        self._insert_game_over_dialog()
+
+
+    def _insert_game_over_dialog(self):
+        """ insert start game dialog """        
+        self.game_over_dialog_GUI = self.scene.addWidget(self.game_over_dialog)
+        x = self.x1+ self.w/2 - self.game_over_dialog.width()/2
+        y = self.y1+ self.h/2 -  self.game_over_dialog.height()/2
+        self.game_over_dialog_GUI.setPos(x,y)
+        #self.game_over_dialog.push_button_start_game.clicked.connect(self.start_game)
+        self.game_over_dialog.Button_new_game.clicked.connect(self._on_new_game)
+        self.game_over_dialog.show()
+        #self.update_start_game_dialog()
+        
+
+    def _on_new_game(self):
+        self.on_data_to_server({"game":{"reset":""}})
+        
+
+    def _on_game_is_ready(self):
+        self.on_data_to_server({"game":{"start_game_on_hold":""}})
+        #time.sleep(1)
         self.on_data_to_server({"game":{"go":""}})
 
 
+    # ======================= game loop
+
     def gameLoop(self):
-        #print(self.step)
         if self.info_label_GUI != None:
-            status_text = 'Running '+str(self.step)
+            status_text =('Running              : %4i'%(self.step) + 
+                          "\nServer signal time :  %3i"%(self.t_server) + 
+                          "\nData tansform time :  %3i"%(self.t_treedict) +
+                          "\nFPS                :  %3i"%(self._fps) )
             self.info_label_GUI.setPlainText(status_text)    
         self.step = self.step + 1
-        self.execute_queue_commands()
+        #self.execute_queue_commands()
         self.plot_scene()
 
 
-    #def timerEvent(self, e):
-    #    print(self.step)
-    #    if self.info_label_GUI != None:
-    #        status_text = 'Running '+str(self.step)
-    #        self.info_label_GUI.setPlainText(status_text)    
-    #    self.step = self.step + 1
-    #    print("r")
-    #    self.execute_queue_commands()
-    #    self.plot_scene()
-
     # -> qeueue is not reached -> ceate signal -> more dicevt and ?faster?
     # -> no event loop on client -> not running case background thread
-    def execute_queue_commands(self):
-        """ execution of the commands stores in the queue e"""
-        while not self.task_queue.empty():
-            [client,queue_command] = self.task_queue.get()
-            print("x",queue_command)
-            self.command_eval(client,queue_command)
-            self.task_queue.task_done()
-
-
-    def update_player_coordinates(self,player_coor_dict):
-        """ updating all player coordinates """
-        pl_dict = {}
-        for pl in self.player_list:
-            pl_dict[pl.name] = pl
-
-        for pl_name in player_coor_dict:
-            pl_dict[pl_name].update_position(player_coor_dict[pl_name])
-
-
-    def update_player_direction(self,player_dir_dict):
-        """ function is executed on game start -> player chaned from hold to go """
-        pl_dict = {}
-        for pl in self.player_list:
-            pl_dict[pl.name] = pl
-
-        for pl_name in player_dir_dict:
-            pl_dict[pl_name].direction = player_dir_dict[pl_name]
+    #def execute_queue_commands(self):
+    #    """ execution of the commands stores in the queue e"""
+    #    while not self.task_queue.empty():
+    #        print("x")
+    #        [client,queue_command] = self.task_queue.get()
+    #        self.command_eval(client,queue_command)
+    #        self.task_queue.task_done()                
 
 
     def plot_scene(self):
         """ plots all grafik objects in the viewport """
 
-        transform = QtGui.QTransform()
-        transform.scale(self.line_width,self.line_width)
+        #transform = QtGui.QTransform()
+        #transform.scale(self.line_width,self.line_width)
 
         transform2 = QtGui.QTransform()
         transform2.translate(self.x1,self.y1)
@@ -201,11 +292,23 @@ class GameOnClient(Game.SnakeGame):
         for p in self.player_list:
             if p.item_group in self.scene.items():
                 self.scene.removeItem(p.item_group)
-            grafik_object = p.draw_object()
+                
+            grafik_object = p.plot()
             grafik_object.setTransform(transform2)
-            grafik_object.setTransform(transform,True)
+            #grafik_object.setTransform(transform,True)
             self.scene.addItem(grafik_object)
+
+        for name in self.grafik_object_dict:
+            grafik_item = self.grafik_object_dict[name]
+            if grafik_item.item_group in self.scene.items():
+                self.scene.removeItem(grafik_item.item_group)
+
+            grafik_object = grafik_item.plot()
+            grafik_object.setTransform(transform2)
+            self.scene.addItem(grafik_object)
+        
         self.graphics_view.update()
+
 
     # ======================= sending data
 
@@ -213,3 +316,15 @@ class GameOnClient(Game.SnakeGame):
         """ checks the data thats goes to the server """
         if self.callback_data_to_server != None:
             self.callback_data_to_server(data_dict)
+
+
+    # ======================= network status
+    def on_sec_ellapsed(self):
+        self.t_server = 999 if len(self.t_server_list) == 0 else max(self.t_server_list)
+        self.t_treedict = 999 if len(self.t_treedict_list) == 0 else max(self.t_treedict_list)
+        
+        self.t_server_list.clear()
+        self.t_treedict_list.clear()
+
+        self._fps = self._fps_temp
+        self._fps_temp = 0
