@@ -45,12 +45,19 @@ timer->setInterval(1);
 timer->moveToThread(somethread);
 //connect what you want
 somethread->start();
+
+
+pip install pyinstaller
+pinstaller --onefile StartPySnake.py    
+
+
 """
 
 
 
 class MyFirstGuiProgram(QMainWindow,PyQt_Gui.Ui_MainWindow):
     
+
     def __init__(self,dialog):
         #super(MyFirstGuiProgram, self).__init__(None)  
         QMainWindow.__init__(self)
@@ -66,11 +73,17 @@ class MyFirstGuiProgram(QMainWindow,PyQt_Gui.Ui_MainWindow):
         self.init_events()
         self.init_view()
 
-        self.client = Network.GameClient()
-        self.client.color = Qt.Qt.red
+        self.client = Network.GameClient(self)
+        self.client.signal_status_message.connect(self.set_status_message)
+        self.client.signalCommand.connect(self.eval_command_from_server)
+        self.client.color = Qt.QColor("#ff0000")
+        self.update_color()
+        self.client.connect_client()
+
         #self.widget_open_game.hide()
         self.widget_join_game.hide()
 
+        self.widget_game_options = None
 
 
     def init_events(self):
@@ -80,6 +93,8 @@ class MyFirstGuiProgram(QMainWindow,PyQt_Gui.Ui_MainWindow):
         self.push_button_open_game.clicked.connect(self.open_new_game)
         self.push_button_join_game.clicked.connect(self.join_game)
         self.push_button_color_select.clicked.connect(self.color_picker)
+        self.push_button_options.toggled.connect(self.show_options)
+
 
     def init_view(self):
         self.scene = QtWidgets.QGraphicsScene()
@@ -98,20 +113,13 @@ class MyFirstGuiProgram(QMainWindow,PyQt_Gui.Ui_MainWindow):
             if event.key() == QtCore.Qt.Key_Escape:
                 self.close()
         return super(MyFirstGuiProgram, self).eventFilter(obj, event)
-
-    
-    #def start_game(self):
-    #    self.b_rect = self.graphicsView.mapToScene(self.graphicsView.viewport().geometry()).boundingRect()
-    #    x1 =self.b_rect.x()
-    #    y1 =self.b_rect.y()
-    #    x2 =self.b_rect.x() + self.b_rect.width()
-    #    y2 = self.b_rect.y()  +self.b_rect.height()
-        
+            
 
     def start_server(self):
         thread = threading.Thread(target=self.start_server_bkg, args=())
         thread.daemon = True                            # Daemonize thread
         thread.start()     
+        self.set_status_message("Start Server on this client!")
 
 
     def start_server_bkg(self):
@@ -123,18 +131,8 @@ class MyFirstGuiProgram(QMainWindow,PyQt_Gui.Ui_MainWindow):
     def start_client(self):
         """ creats a client for the local player
         - must connect to the server"""
-        #try:
         if self.client !=  None and not self.client.is_connected():
-                self.client.signalCommand.connect(self.eval_command_from_server)
                 self.client.connect_client()
-        #except:
-        #    print(" -> connection failed - return ")
-
-    #def start_timer(self):
-    #    self.timer_queue_exec = QTimer(self)
-    #    self.timer_queue_exec.timeout.connect(self._execute_queue_commands)
-    #    self.timer_queue_exec.start(self.timer_queue_exec_interval)
-    #    # =============== der timer cann auch durch ein event ersetzt werden
 
 
     def toggle_visibility_open_new_game_dialog(self,hide=True):
@@ -155,7 +153,21 @@ class MyFirstGuiProgram(QMainWindow,PyQt_Gui.Ui_MainWindow):
             self.open_games_table.setSelectionBehavior(QtWidgets.QTableView.SelectRows)
             self.widget_join_game.show()
             self.client.request_open_games()
-            #self.add_entrys()
+
+
+    @QtCore.pyqtSlot(bool)  #<<== the missing link
+    def show_options(self,checked): 
+        """ opens the menu with game optiones """
+        if checked:
+            if self.widget_game_options == None:
+                self.widget_game_options = PyQt_Gui.Widget_Game_options(self.client)
+                #self.widget_game_options.slider_speed.sliderReleased.connect(self.test)
+                self.verticalLayout_3.addWidget(self.widget_game_options)
+            self.widget_game_options.set_values(self.client.get_game_options())
+            self.widget_game_options.show()
+        elif not checked:
+            self.widget_game_options.hide()
+            self.widget_game_options.send_game_options()
 
 
     def open_new_game(self):
@@ -170,30 +182,19 @@ class MyFirstGuiProgram(QMainWindow,PyQt_Gui.Ui_MainWindow):
     def join_game(self):
         """ sends a request to the server to join the game """
         indexes = self.open_games_table.selectionModel().selectedRows()
-        for index in sorted(indexes):
-            print('Row %d is selected' % index.row())
 
         if len(indexes) == 0:
-            print(" -> no game selected")
+            self.set_status_message(" -> no game selected")
         else:
             selected_row= indexes[0]
             m = self.open_games_table.model()
             index = m.index(selected_row.row(),0)
             game_name = m.data(index)
-            print("game_name_from_tabel : ", game_name)
+            self.set_status_message(" -> connecting to game : "+game_name)
             self.toggle_visibility_open_games(True)
             self.toggle_visibility_open_new_game_dialog(True)
             self.app.processEvents(QtCore.QEventLoop.AllEvents)
             self.client.start_game_grafik_interface(game_name,self.graphicsView)
-
-
-    #def _execute_queue_commands(self):
-    #    """ execution of the commands stores in the queue 
-    #    -> inifinite loop until listen is stoped with self.timer_queue_execution=False"""
-    #    while not self.client.task_queue.empty():s
-    #            [client,queue_command] = self.client.task_queue.get()
-    #            self._command_eval(client,queue_command)
-    #            self.client.task_queue.task_done()
 
 
     @QtCore.pyqtSlot(list)
@@ -219,12 +220,11 @@ class MyFirstGuiProgram(QMainWindow,PyQt_Gui.Ui_MainWindow):
 
     def update_all_open_games(self,open_game_dict):
         """ updates the open games list """
-        print("x",open_game_dict)
         self.open_games.clear()
         for game in open_game_dict:
             new_game = (game,len(open_game_dict[game]))
             self.open_games.append(new_game)
-            self.add_entrys()
+        self.add_entrys()
         self.client.update_open_game_player_data(open_game_dict)
 
 
@@ -243,7 +243,6 @@ class MyFirstGuiProgram(QMainWindow,PyQt_Gui.Ui_MainWindow):
     def add_entrys(self):
 #        data_list = [('XYLENES', 139.1)]
         header = ['Game Name', 'Player']
-
         table_model = MyGui.TableModel(self, self.open_games, header)
         self.open_games_table.setModel(table_model)
         self.open_games_table.resizeColumnsToContents()
@@ -253,13 +252,28 @@ class MyFirstGuiProgram(QMainWindow,PyQt_Gui.Ui_MainWindow):
  
     def color_picker(self):
         color = QtWidgets.QColorDialog.getColor()
-        #self.color_frame.styleChoice.setStyleSheet("QWidget { background-color: %s}" % color.name())
-        self.color_frame.setStyleSheet("background-color: %s"% color.name())
-        #p = self.color_frame.palette()
-        #p.setColor(self.color_frame.backgroundRole(),Qt.Qt.red)
-        #self.color_frame.setPalette(p)
         self.client.color=color
-        #print(color,color.name())
+        self.update_color()
+
+
+    def update_color(self):
+        """ updates the grafik items that are connected to the player color"""
+
+        #self.push_button_color_select.setStyleSheet("color: %s"%"#ffffff")
+        r = self.client.color.red()
+        g = self.client.color.green()
+        b = self.client.color.blue()
+        col_sum = r+g+b
+        text_color = "#ffffff" if col_sum < 650 else "#000000"
+        ss_command = "background-color: %s; color: %s"%(self.client.color.name(),text_color)
+        self.push_button_color_select.setStyleSheet(ss_command)
+
+
+    def set_status_message(self,message):
+        self.label_fooder.setText(message)
+
+
+
 
 """
 game logic for server client connection

@@ -8,10 +8,12 @@ import GrafikObjects
 class GameThread(QtCore.QThread):
 
     signalCommand = QtCore.pyqtSignal(list)
+    signal_game_closed = QtCore.pyqtSignal(Game.Game)
 
     def __init__(self,game):
         QtCore.QThread.__init__(self)
         self.game = game
+        self.game.set_thread(self)
 
     def __del__(self):
         self.wait()
@@ -25,7 +27,7 @@ class GameThread(QtCore.QThread):
         self.timer.timeout.connect(self.game.gameLoop)
         self.game.timer = self.timer
         self.exec()
-        print("work thread finished")
+        print("game thread finished")
 
 
 class GameServer(Network.Server):
@@ -88,20 +90,35 @@ class GameServer(Network.Server):
                     player.name = data_dict[cl_key]
                 elif cl_key == "color":
                     player.color = data_dict[cl_key]
+        # distribute the player information to clients
+        self.send_all_open_games()
 
 
     def open_game(self,game_host,game_name):
         """ opens a game, adds the host to the user list and send the open game list to the clients"""
         game = Game.GameOnServer(game_host,game_name)
 
-        print(QtCore.QThread.currentThreadId(),"server thread")
+        ##print(QtCore.QThread.currentThreadId(),"server thread")
         self.game_thread = GameThread(game)
         game.moveToThread(self.game_thread)
         self.game_thread.signalCommand.connect(game.updateCommand)
+        #self.game_thread.signal_game_closed.connect(self.on_game_closed)
+        #self.game_thread.finished.connect(self.on_game_closed)
         self.game_thread.start()
 
-        #self.game.moveToThread(self)
-        #self.game.timer.moveToThread(self)
+
+
+        ## ============
+        #self.game_thread2 = QtCore.QThread()
+
+        #self.timer = QtCore.QTimer()
+        #self.timer.moveToThread(self.game_thread2)
+        #self.timer.timeout.connect(game.gameLoop)
+        #game.timer = self.timer
+        ##self.exec()
+        #self.game_thread2.finished.connect(self.on_game_closed)
+        #self.game_thread2.start()
+        ## ==========
 
         self.open_game_list.append(game)
         self.client_game_dict[game_host] = game
@@ -120,21 +137,26 @@ class GameServer(Network.Server):
     def send_all_open_games(self):
         """ sending the open games to all hosts """
         open_games_dict = {}
+        finished_games = []
         for g in self.open_game_list:
+            if g.parent_thread.isFinished():
+                finished_games.append(g)
+                continue
             open_games_dict[g.name] = [p.get_data_dict() for p in g.player_list]
         self.send_clients({"open_games":open_games_dict})
+        self.remove_finished_games(finished_games)
 
 
-    def reset_game(self):
-        pass
+    def remove_finished_games(self,finished_games):
+        for g in finished_games:
+            if g in self.open_game_list:
+                self.open_game_list.remove(g)
 
 
-    def start_game(self):
-        pass
-
-
-
-    def stop_game(self):
-        pass
+    def on_game_closed(self,game):
+        """ removing game refenreces from game list """
+        print("on_game_closed")
+        if game in self.open_game_list:
+            self.open_game_list.remove(game)
     
 

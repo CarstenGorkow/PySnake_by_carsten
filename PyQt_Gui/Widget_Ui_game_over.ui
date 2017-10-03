@@ -42,9 +42,16 @@ New Player</string>
      </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="Button_new_game">
+     <widget class="QPushButton" name="push_button_new_game">
       <property name="text">
        <string>New Game</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="push_button_close_game">
+      <property name="text">
+       <string>Close Game</string>
       </property>
      </widget>
     </item>

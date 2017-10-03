@@ -8,8 +8,6 @@ class CanvasObject(object):
     def __init__(self):
         self.name = ""
 
-
-
         self._line_list = []
         self._point_list = []
         self.type = ""
@@ -40,6 +38,7 @@ class CanvasObject(object):
         self._color = c
         self.qcolor = QtGui.QColor(self._color)
         self.pen.setColor(self.qcolor)
+
 
     # ===================== excess to grafik coordinates ===========================
 

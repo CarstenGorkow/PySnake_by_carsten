@@ -26,16 +26,16 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
-         <widget class="QPushButton" name="push_button_open_new_game_dialog">
+         <widget class="QPushButton" name="push_button_start_server">
           <property name="text">
-           <string>Open Game</string>
+           <string>Start Server</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="push_button_start_server">
+         <widget class="QPushButton" name="push_button_open_new_game_dialog">
           <property name="text">
-           <string>Start Server</string>
+           <string>Open Game</string>
           </property>
          </widget>
         </item>
@@ -54,15 +54,12 @@
          </widget>
         </item>
         <item>
-         <widget class="QFrame" name="color_frame">
-          <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
+         <widget class="QPushButton" name="push_button_options">
+          <property name="text">
+           <string>Options</string>
           </property>
-          <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
-          </property>
-          <property name="lineWidth">
-           <number>2</number>
+          <property name="checkable">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -95,7 +92,14 @@
        </property>
        <layout class="QGridLayout" name="grid_layout_open_game">
         <item row="1" column="1">
-         <widget class="QLineEdit" name="line_edit_open_game"/>
+         <widget class="QLineEdit" name="line_edit_open_game">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_open_game">
@@ -139,6 +143,9 @@
         </rect>
        </property>
        <layout class="QGridLayout" name="grid_layout_join_game">
+        <property name="sizeConstraint">
+         <enum>QLayout::SetDefaultConstraint</enum>
+        </property>
         <item row="1" column="0">
          <widget class="QTableView" name="open_games_table"/>
         </item>
@@ -152,6 +159,16 @@
        </layout>
       </widget>
      </widget>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetDefaultConstraint</enum>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+     </layout>
     </item>
     <item>
      <widget class="QGraphicsView" name="graphicsView">
@@ -175,6 +192,13 @@
       </property>
       <property name="horizontalScrollBarPolicy">
        <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="label_fooder">
+      <property name="text">
+       <string/>
       </property>
      </widget>
     </item>

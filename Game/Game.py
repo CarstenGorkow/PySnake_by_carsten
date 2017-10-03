@@ -21,7 +21,6 @@ class Game(QtCore.QObject):
             self.player_list.append(player)
             self.player_nr = len(self.player_list)
             return True
-        #print([p.name for p in self.player_list])
         return False
 
 
@@ -32,6 +31,8 @@ class Game(QtCore.QObject):
             pl_id = pl_data['id']
             if not self.is_player_joined(pl_id):
                 self.join_game(GrafikObjects.Player(None,pl_data))
+            else:
+                self.get_player(pl_id).update_player_data(pl_data)
 
 
     def remove_player_not_in_list(self,player_list):
@@ -50,6 +51,12 @@ class Game(QtCore.QObject):
             if pl.id == player_name: return True
         return False
     
+
+    def get_player(self,player_id):
+        for pl in self.player_list:
+            if pl.id == player_id: return pl
+        return None
+
 
     def start_game(self):
         pass

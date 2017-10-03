@@ -11,16 +11,17 @@ from Network.ClientOnServerWraper import ClientOnServerWraper
 class Client( QtCore.QObject):
     """Base client class that manages the receving and sending of data"""
 
-    signalCommand = QtCore.pyqtSignal(list)
+    signalCommand = QtCore.pyqtSignal(list)    
+    signal_status_message = QtCore.pyqtSignal(str)
 
-    def __init__(self):
+    def __init__(self,parent):
         QtCore.QObject.__init__(self)
+        self.parent = parent
 
         self.listen_for_server_msg = True
         self.execute_queue = True
 
-        self.timer_client_interval = 0.03 # s
-        #self.timer_queue_execution = 1.0 # s
+        self.timer_client_interval = 0.03 # 
 
         self.task_queue = queue.Queue()
         
@@ -28,28 +29,54 @@ class Client( QtCore.QObject):
         self.port = 12349                # Reserve a port for your service.
         self.create_client()
 
+    # ================ properties ===================
+
+    @property
+    def host(self):
+        return self._host
+
+    @host.setter
+    def host(self,val):
+        #print(self._host,val)
+        if self._host != val:
+            self._host = val
+            self._set_host()
+
+    # ================ methodes ===================
 
     def create_client(self):
         """create socket for client
         - set host and port for connection"""
         self.client = socket.socket()         # Create a socket object
-        self.host = socket.gethostname() # Get local machine name
-        
+        self._host = socket.gethostbyname(socket.gethostname()) # Get local machine name
+
 
     def connect_client(self):
         """connect the client to the given server """
         try:
+            print("connect to server %s at port %s"%(str(self.host),str(self.port)))
             self.client.connect((self.host, self.port))
             self.client_wrap = ClientOnServerWraper(self.client,[],"c")
             self.start_listener_to_server()
-            print(" -> connected to server")
+            #print(" -> connected to server")
+            self.signal_status_message.emit(" -> connected to server")
             #self.start_queue_execution()
-        except:
-            print(" -> connection failed - return ")
-
+        except OSError as e:
+            #print( e.errno)
+            #print( e.filename)
+            print( e.strerror)
+            #print(" -> connection failed - return ")
+            self.signal_status_message.emit(e.strerror)
 
     def close_client(self):
         self.client.close()
+        self.client = socket.socket()         # Create a socket object
+
+
+    def _set_host(self):
+        self.close_client()
+        self.connect_client()
+        #print(self.host)
 
 
     def is_connected(self):
@@ -91,31 +118,3 @@ class Client( QtCore.QObject):
         #self.task_queue.put(task)
         self.signalCommand.emit(task)
 
-            
-
-    #def start_queue_execution(self):
-    #    """ starts the server listen in background loop 
-    #    - can be stoped with self.listen_for_client_connect=False"""
-    #    thread = threading.Thread(target=self._execute_queue_commands_bkg, args=())
-    #    thread.daemon = True                            # Daemonize thread
-    #    thread.start()     
-
-
-    #def _execute_queue_commands_bkg(self):
-    #    """ execution of the commands stores in the queue 
-    #    -> inifinite loop until listen is stoped with self.timer_queue_execution=False"""
-    #    while self.execute_queue:
-    #        while not self.task_queue.empty():
-    #            self._command_eval(self.task_queue.get())
-    #            self.task_queue.task_done()
-    #        time.sleep(self.timer_queue_execution)
-
-
-    #def _command_eval(self,command):
-    #    for key in command:
-    #        if key == "games":
-    #            print(key,command[key])
-    #            new_game = (command[key],0)
-    #            self.open_games.append(new_game)
-    #        else:
-    #            print("ERROR - Server - Command key not knwon -%s"%key)

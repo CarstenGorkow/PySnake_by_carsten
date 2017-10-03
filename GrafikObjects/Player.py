@@ -8,35 +8,20 @@ class Player(GrafikObjects.CanvasObject):
         super().__init__()
 
         self.client = client
+        
+        self.name = 'player'
+        self.id = ""
+        self.color = None
+
         self._eval_pl_data(pl_data)
-
-        #self.color = QtGui.QPen(QtGui.QColor(0,0,0))
-
+        
         self._direction = 4
         self._direction_old = 4
-        #self._last_direction = 0
         
         self._growth = 0
         self.raster_size = 1
 
-
-    def _eval_pl_data(self,data_dict):
-        if 'name' in data_dict:
-            self.name = data_dict['name']
-        else:
-            self.name = 'player'
-
-        if 'id' in data_dict:
-            self.id = data_dict['id']
-        else:
-            self.id = ""
-
-        if 'color' in data_dict:
-            print(" ==> ",data_dict['color'])
-            self.color = data_dict['color']
-        else:
-            self.color = None
-
+    # ============ property ============
 
     @property
     def direction(self):
@@ -45,6 +30,23 @@ class Player(GrafikObjects.CanvasObject):
     @direction.setter
     def direction(self,dir):
         self._set_direction(dir)
+
+    # ============ methodes ===========
+
+    def update_player_data(self,data_dict):
+        """ updates the given parameters from the data_dict """
+        self._eval_pl_data(data_dict)
+
+
+    def _eval_pl_data(self,data_dict,only_update=False):
+        if 'name' in data_dict:
+            self.name = data_dict['name']
+
+        if 'id' in data_dict:
+            self.id = data_dict['id']
+        
+        if 'color' in data_dict:
+            self.color = data_dict['color']
 
 
     def _set_direction(self,new_dir):

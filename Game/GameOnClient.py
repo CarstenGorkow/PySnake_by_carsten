@@ -10,6 +10,7 @@ import time
 class GameOnClient(Game.SnakeGame):
     """description of class"""
 
+    signal_game_close = QtCore.pyqtSignal()    
 
     @QtCore.pyqtSlot(list)
     def eval_command_from_server(self, status):
@@ -41,11 +42,19 @@ class GameOnClient(Game.SnakeGame):
         self.grafik_object_dict = {}
 
         self.timer.timeout.connect(self.gameLoop)
-        self.timer_interval = 50
+        self.timer_interval_listen = 50
+        self._game_interval = 100
+        
+        self._line_width = 10
 
         # grafik items
         self.game_start_dialog = PyQt_Gui.Widget_Start_game()
+        self.game_start_dialog.push_button_start_game.clicked.connect(self.start_game)
+        self.game_start_dialog.push_button_close_game.clicked.connect(self.close_game)
         self.game_over_dialog = PyQt_Gui.Widget_Game_over()
+        self.game_over_dialog.push_button_new_game.clicked.connect(self._on_new_game)
+        self.game_over_dialog.push_button_close_game.clicked.connect(self.close_game)
+
         self.info_label_GUI = None
 
         self._fps = 0
@@ -61,6 +70,27 @@ class GameOnClient(Game.SnakeGame):
 
         self.init_view_size()
 
+
+    # ================ properties ===================
+
+    @property
+    def game_interval(self):
+        return self._game_interval
+    
+    @game_interval.setter
+    def game_interval(self,value):
+        self._game_interval = value
+        self.on_data_to_server({"game":{"set_game_interval":self._game_interval}})
+
+    @property
+    def line_width(self):
+        return self._line_width
+    
+    @line_width.setter
+    def line_width(self,value):
+        self._line_width = value
+        self.set_graphics_view_size()
+
     # ======================= server game commands
 
     def command_eval(self,client,tree_dict):
@@ -72,7 +102,6 @@ class GameOnClient(Game.SnakeGame):
                 self._insert_start_game_dialog()
             elif command_key == "player_coor":
                 coor_dict = tree_dict[command_key]
-                #print(coor_dict)
                 self.update_player_coordinates(coor_dict)
             elif command_key == "player_dir":
                 self.update_player_direction(tree_dict[command_key])
@@ -85,8 +114,10 @@ class GameOnClient(Game.SnakeGame):
                 self._on_game_is_ready()
             elif command_key == "hide_all_dialogs":
                 self._hide_all_dialods()
+            elif command_key == "close_game":
+                self.on_game_close()
             else:
-                print("ERROR - Server - Command key not knwon '%s'"%command_key)
+                print("ERROR - Gmae Client - Command key not knwon '%s'"%command_key)
 
     def update_player_coordinates(self,player_coor_dict):
         """ updating all player coordinates """
@@ -143,7 +174,7 @@ class GameOnClient(Game.SnakeGame):
         """ inti view, if field size is given """
         #self._set_field_size()
         self._insert_info_label()
-        self.timer.start(self.timer_interval)
+        self.timer.start(self.timer_interval_listen)
 
 
 
@@ -157,9 +188,8 @@ class GameOnClient(Game.SnakeGame):
 
     def set_field_size(self,w,h):
         res = super().set_field_size(w,h)
-        self.graphics_view.setFixedWidth (self.field_size.x()*self.line_width)
-        self.graphics_view.setFixedHeight(self.field_size.y()*self.line_width)
         self.graphics_view.centerOn(0,0)
+        self.set_graphics_view_size()
         self.graphics_view.setDragMode(QtWidgets.QGraphicsView.NoDrag)
         self.graphics_view.setSceneRect(QtCore.QRectF(0,0,100,100))
         self.graphics_view.update()
@@ -167,13 +197,23 @@ class GameOnClient(Game.SnakeGame):
         return res
 
 
+    def set_graphics_view_size(self):
+        self.graphics_view.setFixedWidth (self.field_size.x()*self.line_width)
+        self.graphics_view.setFixedHeight(self.field_size.y()*self.line_width)
+
+
     def _insert_start_game_dialog(self):
         """ insert start game dialog """
+
+        #self.widget_game_options = PyQt_Gui.Widget_Game_options()
+        #self.game_start_dialog_GUI = self.scene.addWidget(self.widget_game_options)
+        #self.game_start_dialog_GUI.setPos(5,5)
+
+        print( self.game_start_dialog.parent())
         self.game_start_dialog_GUI = self.scene.addWidget(self.game_start_dialog)
         x = self.x1+ self.w/2 - self.game_start_dialog.width()/2
         y = self.y1+ self.h/2 -  self.game_start_dialog.height()/2
         self.game_start_dialog_GUI.setPos(x,y)
-        self.game_start_dialog.push_button_start_game.clicked.connect(self.start_game)
         self.game_start_dialog.show()
         self.update_start_game_dialog()
 
@@ -217,10 +257,16 @@ class GameOnClient(Game.SnakeGame):
         """ executed if a game run is startet -> game loop already running """
         self.on_data_to_server({"game":{"go":""}})
 
+
     def _hide_all_dialods(self):
         """ hides all dialogs directly before the game starts"""
         self.game_start_dialog.hide()
         self.game_over_dialog.hide()
+
+
+    def close_game(self):
+        """ closes the game on the server"""
+        self.on_data_to_server({"game":{"close_game":""}})
 
     # ======================= game over dialog
     def on_game_over(self):
@@ -239,8 +285,6 @@ class GameOnClient(Game.SnakeGame):
         x = self.x1+ self.w/2 - self.game_over_dialog.width()/2
         y = self.y1+ self.h/2 -  self.game_over_dialog.height()/2
         self.game_over_dialog_GUI.setPos(x,y)
-        #self.game_over_dialog.push_button_start_game.clicked.connect(self.start_game)
-        self.game_over_dialog.Button_new_game.clicked.connect(self._on_new_game)
         self.game_over_dialog.show()
         #self.update_start_game_dialog()
         
@@ -251,9 +295,20 @@ class GameOnClient(Game.SnakeGame):
 
     def _on_game_is_ready(self):
         self.on_data_to_server({"game":{"start_game_on_hold":""}})
-        #time.sleep(1)
         self.on_data_to_server({"game":{"go":""}})
 
+
+    def on_game_close(self):
+        """ called if the server sends the signal to close the game """
+        # clear screen
+        self.scene.clear()
+        # remove fixed canvas size
+        self.graphics_view.setSizePolicy(QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
+        self.graphics_view.setMinimumSize(0,0)
+        self.graphics_view.setMaximumSize(9999,9999)
+        # send signal to client
+        self.signal_game_close.emit()
+        
 
     # ======================= game loop
 
@@ -266,25 +321,11 @@ class GameOnClient(Game.SnakeGame):
             self.info_label_GUI.setPlainText(status_text)    
         self.step = self.step + 1
         #self.execute_queue_commands()
-        self.plot_scene()
-
-
-    # -> qeueue is not reached -> ceate signal -> more dicevt and ?faster?
-    # -> no event loop on client -> not running case background thread
-    #def execute_queue_commands(self):
-    #    """ execution of the commands stores in the queue e"""
-    #    while not self.task_queue.empty():
-    #        print("x")
-    #        [client,queue_command] = self.task_queue.get()
-    #        self.command_eval(client,queue_command)
-    #        self.task_queue.task_done()                
+        self.plot_scene() 
 
 
     def plot_scene(self):
         """ plots all grafik objects in the viewport """
-
-        #transform = QtGui.QTransform()
-        #transform.scale(self.line_width,self.line_width)
 
         transform2 = QtGui.QTransform()
         transform2.translate(self.x1,self.y1)

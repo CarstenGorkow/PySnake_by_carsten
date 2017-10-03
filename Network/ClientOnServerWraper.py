@@ -70,6 +70,9 @@ class ClientOnServerWraper(object):
                     print(" -> connectino was clossed")
                     self.client.close()
                     byte_array_temp = b"" 
+                except OSError as e:
+                    byte_array_temp = b""
+
                 byte_array = byte_array + byte_array_temp
 
             if len(self.byte_array_remaining) > 0:
@@ -160,7 +163,11 @@ class ClientOnServerWraper(object):
             pass
         elif type(msg) is str:
             msg = msg.encode(self.encd)
-        self.client.send(msg)
+
+        try:
+            self.client.send(msg)
+        except ConnectionAbortedError as e:
+            self.close()
 
 
     def close(self):

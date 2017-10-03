@@ -81,9 +81,13 @@
     <Compile Include="Network\__init__.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="PyQt_Gui\Widget_game_options.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="PyQt_Gui\Widget_game_over.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="PyQt_Gui\Widget_Ui_game_options.py" />
     <Compile Include="PyQt_Gui\Widget_Ui_game_over.py" />
     <Compile Include="PyQt_Gui\Widget_Ui_start_game.py" />
     <Compile Include="PyQt_Gui\Widget_start_game.py">

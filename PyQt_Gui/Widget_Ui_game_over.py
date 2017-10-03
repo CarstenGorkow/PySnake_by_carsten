@@ -26,9 +26,12 @@ class Ui_Game_over(object):
         self.Button_wait_for_player = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.Button_wait_for_player.setObjectName("Button_wait_for_player")
         self.verticalLayout.addWidget(self.Button_wait_for_player)
-        self.Button_new_game = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.Button_new_game.setObjectName("Button_new_game")
-        self.verticalLayout.addWidget(self.Button_new_game)
+        self.push_button_new_game = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.push_button_new_game.setObjectName("push_button_new_game")
+        self.verticalLayout.addWidget(self.push_button_new_game)
+        self.push_button_close_game = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.push_button_close_game.setObjectName("push_button_close_game")
+        self.verticalLayout.addWidget(self.push_button_close_game)
 
         self.retranslateUi(Game_over)
         QtCore.QMetaObject.connectSlotsByName(Game_over)
@@ -38,5 +41,6 @@ class Ui_Game_over(object):
         Game_over.setWindowTitle(_translate("Game_over", "Form"))
         self.Button_wait_for_player.setText(_translate("Game_over", "Wait For \n"
 "New Player"))
-        self.Button_new_game.setText(_translate("Game_over", "New Game"))
+        self.push_button_new_game.setText(_translate("Game_over", "New Game"))
+        self.push_button_close_game.setText(_translate("Game_over", "Close Game"))
 

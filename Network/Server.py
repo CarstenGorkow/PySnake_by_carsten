@@ -145,10 +145,13 @@ class Server( QtCore.QObject ): # (object):
         """ listen to all clients on server 
         -> add the found commands to the server queue """
         for c in self.client_list:
-            c.listen()
-            while not c.task_queue.empty():
-                self.task_queue.put(c.task_queue.get())
-                c.task_queue.task_done()
+            try:
+                c.listen()
+                while not c.task_queue.empty():
+                    self.task_queue.put(c.task_queue.get())
+                    c.task_queue.task_done()
+            except ConnectionAbortedError as e:
+                pass
 
     # =============
 

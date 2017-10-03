@@ -11,7 +11,6 @@ class SnakeGame(Game.Game):
         super().__init__(name)
 
         self.field_size = Qt.QPoint(0,0)
-        self.line_width = 10
 
         self.step = 0
         self.timer = QtCore.QTimer()
@@ -19,6 +18,7 @@ class SnakeGame(Game.Game):
         self.food_list = []
         self.border_list = []
 
+    # ================ methodes ===================
 
     def set_field_size(self,w,h):
         self.field_size.setX(w)

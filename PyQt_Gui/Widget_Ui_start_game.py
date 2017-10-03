@@ -52,6 +52,9 @@ class Ui_Start_game(object):
         self.push_button_start_game.setSizePolicy(sizePolicy)
         self.push_button_start_game.setObjectName("push_button_start_game")
         self.verticalLayout.addWidget(self.push_button_start_game)
+        self.push_button_close_game = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.push_button_close_game.setObjectName("push_button_close_game")
+        self.verticalLayout.addWidget(self.push_button_close_game)
 
         self.retranslateUi(Start_game)
         QtCore.QMetaObject.connectSlotsByName(Start_game)
@@ -62,4 +65,5 @@ class Ui_Start_game(object):
         self.label_game_name_text.setText(_translate("Start_game", "Game name : "))
         self.label_player_rn_text.setText(_translate("Start_game", "Player Nr. :"))
         self.push_button_start_game.setText(_translate("Start_game", "Start Game"))
+        self.push_button_close_game.setText(_translate("Start_game", "Close Game"))
 

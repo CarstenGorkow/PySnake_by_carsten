@@ -28,7 +28,6 @@ class GameOnServer(Game.SnakeGame):
         self.on_data_to_all_clients({"game":{"game_over":""}})
         return super().stop_game()
 
-    
     # ======================= game loop
 
     def gameLoop(self):
@@ -60,6 +59,14 @@ class GameOnServer(Game.SnakeGame):
             elif command_key == "change_dir":
                 if client_source in self.client_pl_dict:
                     self.client_pl_dict[client_source].direction = tree_dict[command_key]
+            elif command_key == "leave_game":
+                self.leave_game()                    
+            elif command_key == "close_game":
+                self.close_game()
+            elif command_key == "set_game_interval":
+                self.game_interval = tree_dict[command_key]
+                self.timer.stop()
+                self.timer.start(self.game_interval)
             else:
                 print("ERROR - Server - Command key not knwon '%s'"%command_key)
 
@@ -144,7 +151,20 @@ class GameOnServer(Game.SnakeGame):
                         item.set_random_position()
 
             # end game if a player is removed
-                
+
+
+    def leave_game(self):
+        pass
+
+
+    def close_game(self):
+        self.on_data_to_all_clients({"game":{"close_game":""}})
+        self.timer.stop()
+        self.parent_thread.quit()
+
+
+    def set_thread(self,parent_thread):
+        self.parent_thread = parent_thread
     
     # ======================= preparing data for send
 
